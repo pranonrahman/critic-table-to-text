@@ -23,6 +23,7 @@ def get_page_content(page_url: str):
         page.wait_for_selector('#review')
         review_section_content = page.locator('#review').inner_html()
 
+
         # Navigate to the specs section
         page.click('a[href="#specs"]')
         page.wait_for_selector('.facts-table-container')
