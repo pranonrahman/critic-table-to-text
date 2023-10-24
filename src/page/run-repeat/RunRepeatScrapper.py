@@ -21,15 +21,26 @@ def get_page_content(page_url: str):
 
         page.click('a[href="#review"]')
         page.wait_for_selector('#review')
-        review_content = page.locator('#review').inner_html()
+        review_section_content = page.locator('#review').inner_html()
+
 
         # Navigate to the specs section
         page.click('a[href="#specs"]')
         page.wait_for_selector('.facts-table-container')
         specs_content = page.locator('div#specs').inner_html()
 
+        lab_data_content = None
+
+        link_count = page.locator('a[href="#lab-data"]').count()
+
+        if link_count > 0:
+            # Navigate to the lab data section
+            page.click('a[href="#lab-data"]')
+            page.wait_for_selector('#lab-data')
+            lab_data_content = page.locator('div#lab-data').inner_html()
+
         logger.info('[get_page_content] -> Completed loading content')
-        return review_content, specs_content
+        return review_section_content, specs_content, lab_data_content
 
 
 def scrape_review_pros_cons(page_content):
@@ -73,6 +84,43 @@ def scrape_specs(page_content):
     )
 
 
+def extract_lab_data_table(soup):
+    data = {}
+    rows = soup.find_all('tr')
+
+    current_category = None
+    current_subcategory = None
+
+    for row in rows:
+        th = row.find('th')
+        td = row.find_all('td')
+
+        if th:
+            # Extract the category when a <th> element is found
+            current_category = th.text.strip()
+            data[current_category] = {}
+        elif current_category and len(td) == 3:
+            # Extract subcategories and values when <td> elements are found
+            subcategory = td[0].text.strip()
+            values = {
+                "Merrell Moab 2 GTX": td[1].text.strip(),
+                "Average": td[2].text.strip(),
+            }
+
+            data[current_category][subcategory] = values
+    return data
+
+
+def scrape_lab_data(page_content):
+    logger.info('[scrape_lab_data] -> scraping lab data')
+
+    soup = BeautifulSoup(page_content, 'html.parser')
+
+    return extract_lab_data_table(
+        soup.find('table', {'class': 'table'})
+    )
+
+
 if __name__ == '__main__':
     configure_logger(APPLICATION_NAME, log_level=logging.INFO)
     logger = logging.getLogger(APPLICATION_NAME)
@@ -82,32 +130,30 @@ if __name__ == '__main__':
     with open('../run-repeat/resources/crawled_url.txt', 'r', encoding='utf-8') as f:
         for url in f.readlines():
             logger.info(f'Scraping url: {url[:-1]}')
-            review_content, spec_content = get_page_content(url)
+            review_content, spec_content, lab_data_content = get_page_content(url)
 
             reviews = scrape_review_pros_cons(page_content=review_content)
             specs = scrape_specs(page_content=spec_content)
 
-            parsed_data.append(
-                {
-                    'score': reviews['score'],
-                    'verdict': reviews['text_review'],
-                    'pros': reviews['pros'],
-                    'cons': reviews['cons'],
-                    'specs': specs
-                }
-            )
+            lab_data = None
 
-            # print(json.dumps({
-            #     'score': reviews['score'],
-            #     'verdict': reviews['text_review'],
-            #     'pros': reviews['pros'],
-            #     'cons': reviews['cons'],
-            #     'specs': specs
-            # }, indent=5))
+            if lab_data_content is not None:
+                lab_data = scrape_lab_data(lab_data_content)
 
-            logger.info(f'Completed url: {url[:-1]}')
+            parsed_content = {
+                'score': reviews['score'],
+                'verdict': reviews['text_review'],
+                'pros': reviews['pros'],
+                'cons': reviews['cons'],
+                'specs': specs
+            }
 
-    dumped_json = json.dumps(parsed_data)
+            if lab_data is not None:
+                parsed_content['lab_data'] = lab_data
 
-    with open('resources/parsed_data_396.json', 'w', encoding='utf-8') as f:
+            parsed_data.append(parsed_content)
+
+    dumped_json = json.dumps(parsed_data, indent=3)
+
+    with open('resources/data_with_lab_data.json', 'w', encoding='utf-8') as f:
         f.write(dumped_json)
