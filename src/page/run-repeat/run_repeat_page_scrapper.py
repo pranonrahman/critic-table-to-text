@@ -23,7 +23,6 @@ def get_page_content(page_url: str):
         page.wait_for_selector('#review')
         review_section_content = page.locator('#review').inner_html()
 
-
         # Navigate to the specs section
         page.click('a[href="#specs"]')
         page.wait_for_selector('.facts-table-container')
@@ -106,8 +105,7 @@ def extract_lab_data_table(soup):
     rows = soup.find_all('tr')
 
     current_category = None
-    current_subcategory = None
-    headers = []
+    headers = [th.text.strip() for th in rows[0].find_all('th')]
 
     for row in rows:
         th = row.find('th')
@@ -117,7 +115,6 @@ def extract_lab_data_table(soup):
             # Extract the category when a <th> element is found
             current_category = th.text.strip()
             data[current_category] = {}
-            headers = [header.text.strip() for header in td]
         elif current_category and len(td) == 3:
             # Extract subcategories and values when <td> elements are found
             subcategory = td[0].text.strip()
@@ -173,7 +170,9 @@ if __name__ == '__main__':
 
             parsed_data.append(parsed_content)
 
+            break
+
     dumped_json = json.dumps(parsed_data, indent=3)
 
-    with open('resources/data_with_lab_data.json', 'w', encoding='utf-8') as f:
+    with open('resources/data_with_lab_data_test.json', 'w', encoding='utf-8') as f:
         f.write(dumped_json)
