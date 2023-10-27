@@ -6,8 +6,8 @@ from playwright.sync_api import sync_playwright
 
 from src.config.log_config import configure_logger
 from src.configs import APPLICATION_NAME
-from src.util.common_extractor import extract_from_list, extract_from_table
-from src.util.text_normalizer import tokenize_text
+from src.util.common_extractor import extract_from_list
+from src.util.text_normalizer import tokenize_text, remove_trailing_colon
 
 
 def get_page_content(page_url: str):
@@ -84,12 +84,30 @@ def scrape_specs(page_content):
     )
 
 
+def extract_from_table(section):
+    """
+    :param section: html selection
+    :return: json where key is first column and value is second column of each row
+    """
+    table_data = dict()
+
+    for row in section.find_all('tr'):
+        key = remove_trailing_colon(tokenize_text(row.find_all('th')[0].text))
+        value = tokenize_text(row.find_all('td')[0].text)
+
+        if key and value:
+            table_data[key] = value
+
+    return table_data
+
+
 def extract_lab_data_table(soup):
     data = {}
     rows = soup.find_all('tr')
 
     current_category = None
     current_subcategory = None
+    headers = []
 
     for row in rows:
         th = row.find('th')
@@ -99,15 +117,17 @@ def extract_lab_data_table(soup):
             # Extract the category when a <th> element is found
             current_category = th.text.strip()
             data[current_category] = {}
+            headers = [header.text.strip() for header in td]
         elif current_category and len(td) == 3:
             # Extract subcategories and values when <td> elements are found
             subcategory = td[0].text.strip()
             values = {
-                "Merrell Moab 2 GTX": td[1].text.strip(),
-                "Average": td[2].text.strip(),
+                headers[1]: td[1].text.strip(),
+                headers[2]: td[2].text.strip(),
             }
 
             data[current_category][subcategory] = values
+
     return data
 
 
