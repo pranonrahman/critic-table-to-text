@@ -107,6 +107,7 @@ def extract_lab_data_table(soup):
     current_category = None
     headers = [th.text.strip() for th in rows[0].find_all('th')]
 
+
     for row in rows:
         th = row.find('th')
         td = row.find_all('td')
@@ -170,9 +171,7 @@ if __name__ == '__main__':
 
             parsed_data.append(parsed_content)
 
-            break
-
     dumped_json = json.dumps(parsed_data, indent=3)
 
-    with open('resources/data_with_lab_data_test.json', 'w', encoding='utf-8') as f:
+    with open('resources/data_with_lab_data.json', 'w', encoding='utf-8') as f:
         f.write(dumped_json)
