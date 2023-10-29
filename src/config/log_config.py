@@ -2,7 +2,7 @@ import logging
 
 import coloredlogs
 
-from src.configs import APPLICATION_NAME, LOG_LEVEL
+from src.config.configs import APPLICATION_NAME, LOG_LEVEL
 
 
 def get_logger():
