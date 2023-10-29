@@ -1,11 +1,9 @@
 import json
-import logging
 
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
-from src.config.log_config import configure_logger
-from src.configs import APPLICATION_NAME
+from src.config.log_config import get_logger
 from src.util.common_extractor import extract_from_list
 from src.util.text_normalizer import tokenize_text, remove_trailing_colon
 
@@ -107,7 +105,6 @@ def extract_lab_data_table(soup):
     current_category = None
     headers = [th.text.strip() for th in rows[0].find_all('th')]
 
-
     for row in rows:
         th = row.find('th')
         td = row.find_all('td')
@@ -140,8 +137,7 @@ def scrape_lab_data(page_content):
 
 
 if __name__ == '__main__':
-    configure_logger(APPLICATION_NAME, log_level=logging.INFO)
-    logger = logging.getLogger(APPLICATION_NAME)
+    logger = get_logger()
 
     parsed_data = list()
 

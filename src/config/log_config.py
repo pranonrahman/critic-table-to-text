@@ -1,13 +1,13 @@
 import logging
 
+import coloredlogs
 
-def configure_logger(logger_name, log_level=logging.INFO):
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+from src.configs import APPLICATION_NAME, LOG_LEVEL
 
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
 
-    logger = logging.getLogger(logger_name)
-    logger.setLevel(log_level)
+def get_logger():
+    logger = logging.getLogger(APPLICATION_NAME)
+    coloredlogs.install(level=LOG_LEVEL, logger=logger, fmt='%(asctime)s %(levelname)s %(message)s')
 
-    logger.addHandler(handler)
+    return logger
+
