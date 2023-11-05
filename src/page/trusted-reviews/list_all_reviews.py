@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from src.config.log_config import get_logger
-
+from src.util.file_io import write_list_to_file
 
 all_reviews_set = set()
 already_requested_links = dict()
@@ -61,9 +61,7 @@ if __name__ == "__main__":
     logger.info("[list_all_reviews] - Completed making request")
     logger.info("[list_all_reviews] - Started writing files")
 
-    with open('../trusted-reviews/resources/all_crawled_reviews.txt', 'w', encoding='utf-8') as f:
-        for item in all_reviews_set:
-            f.write(item + '\n')
+    write_list_to_file(all_reviews_set, '../trusted-reviews/resources/all_crawled_reviews.txt')
 
     logger.info("[list_all_reviews] - Completed writing files")
     logger.info("[list_all_reviews] - Completed execution")

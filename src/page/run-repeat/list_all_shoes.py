@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from src.config.log_config import get_logger
+from src.util.file_io import write_list_to_file
 
 all_shoe_set = set()
 already_requested_map = dict()
@@ -58,9 +59,7 @@ if __name__ == "__main__":
     logger.info("[list_all_shoes] - Completed making request")
     logger.info("[list_all_shoes] - Started writing files")
 
-    with open('../run-repeat/resources/crawled_url.txt', 'w', encoding='utf-8') as f:
-        for item in all_shoe_set:
-            f.write(f'{item}\n')
+    write_list_to_file(all_shoe_set, '../run-repeat/resources/crawled_url.txt')
 
     logger.info("[list_all_shoes] - Completed writing files")
     logger.info("[list_all_shoes] - Completed execution")

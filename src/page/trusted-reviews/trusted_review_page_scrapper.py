@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 
 from src.config.log_config import get_logger
 from src.util.common_extractor import extract_from_list, make_key_value_pair
+from src.util.file_io import read_list_from_file, write_json, write_list_to_file
 from src.util.text_normalizer import tokenize_text
 
 
@@ -104,57 +105,46 @@ if __name__ == '__main__':
 
     logger.info("Started execution")
 
-    with open('../trusted-reviews/resources/all_crawled_reviews.txt', 'r', encoding='utf-8') as f:
-        for url in f.readlines():
-            logger.info(f'URL -> {url[:-1]}')
+    for url in read_list_from_file('../trusted-reviews/resources/all_crawled_reviews.txt'):
+        logger.info(f'URL -> {url[:-1]}')
 
-            page_content = load_page_content(page_url=url)
+        page_content = load_page_content(page_url=url)
 
-            if page_content is None:
-                missed_download.append(url)
-                time.sleep(60)
-                continue
+        if page_content is None:
+            missed_download.append(url)
+            time.sleep(60)
+            continue
 
-            verdict, pros, cons = scrape_reviews(page_content)
-            full_specs = scrape_full_specs(page_content)
-            lab_test_data = scrape_lab_specs(page_content)
+        verdict, pros, cons = scrape_reviews(page_content)
+        full_specs = scrape_full_specs(page_content)
+        lab_test_data = scrape_lab_specs(page_content)
 
-            if (len(pros) == 0 and len(cons) == 0) or full_specs is None:
-                skipped_links.append(url)
-                logger.warning(f'Did not save data: URL -> {url[:-1]}')
-                continue
+        if (len(pros) == 0 and len(cons) == 0) or full_specs is None:
+            skipped_links.append(url)
+            logger.warning(f'Did not save data: URL -> {url[:-1]}')
+            continue
 
-            data = {
-                'verdict': verdict,
-                'pros': pros,
-                'cons': cons,
-                'specs': full_specs,
-            }
+        data = {
+            'verdict': verdict,
+            'pros': pros,
+            'cons': cons,
+            'specs': full_specs,
+        }
 
-            if lab_test_data is not None:
-                data['lab_data'] = lab_test_data
-            else:
-                logger.warning(f'Missing lab data -> {url[:-1]}')
-                missing_lab_data_links.append(url)
+        if lab_test_data is not None:
+            data['lab_data'] = lab_test_data
+        else:
+            logger.warning(f'Missing lab data -> {url[:-1]}')
+            missing_lab_data_links.append(url)
 
-            all_reviews.append(data)
-            logger.info(f'Appended data to all reviews')
+        all_reviews.append(data)
+        logger.info(f'Appended data to all reviews')
 
-            logger.critical(f'Saved {len(all_reviews)} data')
+        logger.critical(f'Saved {len(all_reviews)} data')
 
-    with open('./resources/data.json', 'w', encoding='utf-8') as f:
-        f.write(json.dumps(all_reviews, indent=5))
-
-    with open('./resources/all_skipped.txt', 'w', encoding='utf-8') as f:
-        for item in skipped_links:
-            f.write(item)
-
-    with open('./resources/missing_lab_data.txt', 'w', encoding='utf-8') as f:
-        for item in missing_lab_data_links:
-            f.write(item)
-
-    with open('./resources/missed_download.txt', 'w', encoding='utf-8') as f:
-        for item in missed_download:
-            f.write(item)
+    write_json(all_reviews, './resources/data.json')
+    write_list_to_file(skipped_links, './resources/all_skipped.txt')
+    write_list_to_file(missing_lab_data_links, './resources/missing_lab_data.txt')
+    write_list_to_file(missed_download, './resources/missed_download.txt')
 
     logger.info("Completed execution")
