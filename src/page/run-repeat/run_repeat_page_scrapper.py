@@ -1,12 +1,9 @@
-import json
-import logging
-
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
-from src.config.log_config import configure_logger
-from src.configs import APPLICATION_NAME
+from src.config.log_config import get_logger
 from src.util.common_extractor import extract_from_list
+from src.util.file_io import read_list_from_file, write_json
 from src.util.text_normalizer import tokenize_text, remove_trailing_colon
 
 
@@ -107,7 +104,6 @@ def extract_lab_data_table(soup):
     current_category = None
     headers = [th.text.strip() for th in rows[0].find_all('th')]
 
-
     for row in rows:
         th = row.find('th')
         td = row.find_all('td')
@@ -140,38 +136,33 @@ def scrape_lab_data(page_content):
 
 
 if __name__ == '__main__':
-    configure_logger(APPLICATION_NAME, log_level=logging.INFO)
-    logger = logging.getLogger(APPLICATION_NAME)
+    logger = get_logger()
 
     parsed_data = list()
 
-    with open('../run-repeat/resources/crawled_url.txt', 'r', encoding='utf-8') as f:
-        for url in f.readlines():
-            logger.info(f'Scraping url: {url[:-1]}')
-            review_content, spec_content, lab_data_content = get_page_content(url)
+    for url in read_list_from_file('../run-repeat/resources/crawled_url.txt'):
+        logger.info(f'Scraping url: {url[:-1]}')
+        review_content, spec_content, lab_data_content = get_page_content(url)
 
-            reviews = scrape_review_pros_cons(page_content=review_content)
-            specs = scrape_specs(page_content=spec_content)
+        reviews = scrape_review_pros_cons(page_content=review_content)
+        specs = scrape_specs(page_content=spec_content)
 
-            lab_data = None
+        lab_data = None
 
-            if lab_data_content is not None:
-                lab_data = scrape_lab_data(lab_data_content)
+        if lab_data_content is not None:
+            lab_data = scrape_lab_data(lab_data_content)
 
-            parsed_content = {
-                'score': reviews['score'],
-                'verdict': reviews['text_review'],
-                'pros': reviews['pros'],
-                'cons': reviews['cons'],
-                'specs': specs
-            }
+        parsed_content = {
+            'score': reviews['score'],
+            'verdict': reviews['text_review'],
+            'pros': reviews['pros'],
+            'cons': reviews['cons'],
+            'specs': specs
+        }
 
-            if lab_data is not None:
-                parsed_content['lab_data'] = lab_data
+        if lab_data is not None:
+            parsed_content['lab_data'] = lab_data
 
-            parsed_data.append(parsed_content)
+        parsed_data.append(parsed_content)
 
-    dumped_json = json.dumps(parsed_data, indent=3)
-
-    with open('resources/data_with_lab_data.json', 'w', encoding='utf-8') as f:
-        f.write(dumped_json)
+    write_json(parsed_data, 'resources/data_with_lab_data.json')
