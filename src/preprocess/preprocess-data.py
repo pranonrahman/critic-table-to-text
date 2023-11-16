@@ -22,6 +22,13 @@ def remove_lab_data(item):
     return item
 
 
+def remove_score(item):
+    if item.get('score', None) is not None:
+        item.pop('score')
+
+    return item
+
+
 def split_and_process_data(run_repeat_data, trusted_reviews_data):
     train_run_repeat, test_run_repeat = train_test_split(run_repeat_data, test_size=0.2, random_state=3)
     train_trusted_review, test_trusted_review = train_test_split(trusted_reviews_data, test_size=0.2, random_state=3)
@@ -43,6 +50,8 @@ def split_and_process_data(run_repeat_data, trusted_reviews_data):
 if __name__ == '__main__':
     run_repeat_data = read_json('../../data/preprocessed-data/run-repeat-data-with-lab-specs.json')
     trusted_reviews_data = read_json('../../data/preprocessed-data/trusted-reviews-data-with-lab-specs.json')
+
+    run_repeat_data = list(map(remove_score, run_repeat_data))
 
     run_repeat_data = list(map(add_shoes_category, run_repeat_data))
     trusted_reviews_data = list(map(add_device_category, trusted_reviews_data))
